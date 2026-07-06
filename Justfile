@@ -3,12 +3,12 @@
 # Auto-detect podman or docker; override with: just compose="docker compose" demo
 compose := `command -v podman > /dev/null 2>&1 && echo "podman compose" || echo "docker compose"`
 
-# Start the full demo in a tmux session (3 windows: pipeline / producer / postgres logs)
+# Start the full demo in a tmux session (3 panes on one screen: pipeline | producer | postgres logs)
 demo: clean up
-    tmux new-session  -d -s cdc -n pipeline 'uv run pipeline.py; echo "[done] press enter"; read'
-    tmux new-window   -t cdc: -n producer  'sleep 3 && uv run producer.py; echo "[done] press enter"; read'
-    tmux new-window   -t cdc: -n logs      '{{compose}} logs -f'
-    tmux select-window -t cdc:pipeline
+    tmux new-session  -d -s cdc 'uv run pipeline.py; echo "[done] press enter"; read'
+    tmux split-window -t cdc -h 'sleep 3 && uv run producer.py; echo "[done] press enter"; read'
+    tmux split-window -t cdc -v '{{compose}} logs -f'
+    tmux select-pane  -t cdc:0.0
     tmux attach-session -t cdc
 
 # Start Postgres and wait until healthy
