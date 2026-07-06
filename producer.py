@@ -11,6 +11,11 @@ NAMES = ["Alice", "Bob", "Carol", "Dave", "Eve", "Frank", "Grace", "Heidi"]
 TIERS = ["bronze", "silver", "gold", "platinum"]
 
 
+def _exec(cur, sql, params=None) -> None:
+    print(f"[sql] {cur.mogrify(sql, params).decode()}")
+    cur.execute(sql, params)
+
+
 def main():
     conn = psycopg2.connect(DSN)
     conn.autocommit = True
@@ -20,7 +25,8 @@ def main():
     start = time.time()
     count = 0
     while time.time() - start < 30:
-        cur.execute(
+        _exec(
+            cur,
             "INSERT INTO orders (customer_name, amount) VALUES (%s, %s)",
             (random.choice(NAMES), round(random.uniform(10, 500), 2)),
         )
@@ -30,13 +36,13 @@ def main():
         time.sleep(0.5)
 
     print(f"[producer] Phase 1 complete: {count} rows inserted")
-    print("[producer] Phase 2: ALTER TABLE orders ADD COLUMN loyalty_tier VARCHAR(20)")
-    cur.execute("ALTER TABLE orders ADD COLUMN loyalty_tier VARCHAR(20)")
+    _exec(cur, "ALTER TABLE orders ADD COLUMN loyalty_tier VARCHAR(20)")
     print("[producer] Schema altered. Continuing inserts with loyalty_tier populated...")
 
     count2 = 0
     while True:
-        cur.execute(
+        _exec(
+            cur,
             "INSERT INTO orders (customer_name, amount, loyalty_tier) VALUES (%s, %s, %s)",
             (random.choice(NAMES), round(random.uniform(10, 500), 2), random.choice(TIERS)),
         )
